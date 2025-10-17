@@ -1,0 +1,11 @@
+[project]
+name = "ttb-label-checker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pillow>=12.0.0",
+    "pytesseract>=0.3.13",
+    "python-fasthtml>=0.12.29",
+]
