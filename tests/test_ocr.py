@@ -8,7 +8,6 @@ def generate_test_label():
     img = Image.new("RGB", (700, 900), color="white")
     draw = ImageDraw.Draw(img)
 
-    # Use larger, more readable fonts
     try:
         font_large = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 70

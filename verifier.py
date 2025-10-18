@@ -54,7 +54,7 @@ class LabelVerifier:
         if not alcohol_found:
             results["success"] = False
 
-        # Check net contents (if provided)
+        # Check net contents
         if form_data.get("net_contents"):
             contents_normalized = form_data["net_contents"].lower().replace(" ", "")
             contents_found = contents_normalized in extracted_lower
