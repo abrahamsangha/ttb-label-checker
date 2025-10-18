@@ -69,7 +69,7 @@ def get():
                     ),
                     style="gap: 0.5rem;",
                 ),
-                DivHStacked(
+                DivVStacked(
                     Label("Upload Label Image", cls="whitespace-nowrap"),
                     Input(
                         name="label_image",
@@ -77,10 +77,10 @@ def get():
                         accept="image/*",
                         required=True,
                     ),
-                    style="gap: 0.5rem;",
+                    style="gap: 0.5rem; align-items: flex-start;",
                 ),
                 Button("Verify Label", type="submit", cls=ButtonT.primary),
-                style="gap: 1.5rem; align-items: flex-start",
+                style="gap: 1.5rem; align-items: flex-start;",
             ),
             style="max-width: 600px; text-align: left",
         ),
@@ -88,7 +88,7 @@ def get():
         cls="space-y-4",
         hx_post="/verify",
         hx_target="#results",
-        hx_swap="innerHTML",
+        hx_swap="innerHTML show:#results:top smooth",
     )
 
     return Container(
@@ -148,7 +148,7 @@ async def post(
                         ),
                         style="gap: 0.25rem;",
                     ),
-                    style="align-items: center; gap: 1rem; padding: 0.5rem 0;",
+                    style="align-items: left; gap: 1rem; padding: 0.5rem 0;",
                 )
             )
 
@@ -171,7 +171,9 @@ async def post(
                 status_card,
                 Card(
                     H3("Verification Details"),
-                    DivVStacked(*check_items, style="gap: 0.5rem;"),
+                    DivVStacked(
+                        *check_items, style="gap: 0.5rem;align-items: flex-start;"
+                    ),
                 ),
                 Details(
                     Summary("View Extracted Text"),
@@ -181,7 +183,7 @@ async def post(
                     ),
                 ),
                 A("← Verify Another Label", href="/", style="margin-top: 1rem;"),
-                style="gap: 1.5rem;",
+                style="gap: 1.5rem; align-items: flex-start;",
             ),
             style="padding: 2rem;",
         )
