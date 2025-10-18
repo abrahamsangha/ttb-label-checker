@@ -1,3 +1,6 @@
+import re
+
+
 class LabelVerifier:
     def __init__(self, ocr_service):
         self.ocr_service = ocr_service
@@ -37,13 +40,17 @@ class LabelVerifier:
             results["success"] = False
 
         # Check alcohol content
-        alcohol_content = form_data["alcohol_content"]
-        if alcohol_content == int(alcohol_content):
-            alcohol_str = str(int(alcohol_content))
+        alcohol_value = form_data["alcohol_content"]
+        # Convert to int if it's a whole number (45.0 -> 45)
+        if alcohol_value == int(alcohol_value):
+            alcohol_str = str(int(alcohol_value))
         else:
-            alcohol_str = str(alcohol_content)
+            alcohol_str = str(alcohol_value)
 
-        alcohol_found = alcohol_str in extracted_text
+        # Look for the alcohol percentage with context (%, ABV, alc, vol, etc.)
+        alcohol_pattern = rf"{alcohol_str}\s*%|\b{alcohol_str}\s*(?:alc|abv|alcohol)|\b{alcohol_str}\s*(?:proof)"
+        alcohol_found = bool(re.search(alcohol_pattern, extracted_text, re.IGNORECASE))
+
         results["checks"].append(
             {
                 "field": "Alcohol Content",
@@ -55,19 +62,52 @@ class LabelVerifier:
             results["success"] = False
 
         # Check net contents
-        if form_data.get("net_contents"):
+        form_match = re.search(r"(\d+\.?\d*)\s*([a-zA-Z.]+)", form_data["net_contents"])
+
+        if form_match:
+            volume_number = form_match.group(1)
+            volume_unit = form_match.group(2).lower().replace(".", "")  # normalize unit
+
+            # Normalize common unit variations
+            unit_map = {
+                "ml": "ml",
+                "oz": "oz",
+                "floz": "oz",
+                "l": "l",
+            }
+            normalized_unit = unit_map.get(volume_unit, volume_unit)
+
+            # Look for the number AND unit together in extracted text
+            # Create pattern for the specific unit with variations
+            if normalized_unit == "ml":
+                unit_pattern = r"(?:mL|ml|ML)"
+            elif normalized_unit == "oz":
+                unit_pattern = r"(?:oz|OZ|fl\.?\s*oz)"
+            elif normalized_unit == "l":
+                unit_pattern = r"(?:L|l)"
+            else:
+                unit_pattern = re.escape(volume_unit)
+
+            # volume_pattern = rf"{volume_number}\s*{unit_pattern}"
+            volume_pattern = rf"\b{volume_number}\s{{0,3}}{unit_pattern}\b"
+
+            contents_found = bool(
+                re.search(volume_pattern, extracted_text, re.IGNORECASE)
+            )
+        else:
+            # Fallback
             contents_normalized = form_data["net_contents"].lower().replace(" ", "")
             contents_found = contents_normalized in extracted_lower
-            results["checks"].append(
-                {
-                    "field": "Net Contents",
-                    "expected": form_data["net_contents"],
-                    "found": contents_found,
-                }
-            )
-            if not contents_found:
-                results["success"] = False
 
+        results["checks"].append(
+            {
+                "field": "Net Contents",
+                "expected": form_data["net_contents"],
+                "found": contents_found,
+            }
+        )
+        if not contents_found:
+            results["success"] = False
         # Check for government warning
         warning_found = "government" in extracted_lower and "warning" in extracted_lower
         results["checks"].append(

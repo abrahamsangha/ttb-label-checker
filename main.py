@@ -43,9 +43,29 @@ def get():
                     style="gap: 0.5rem;",
                 ),
                 DivHStacked(
-                    Label("Net Contents", cls="whitespace-nowrap"),
-                    Input(
-                        name="net_contents", placeholder="e.g., 750 mL", required=True
+                    Label("Net Contents"),
+                    DivHStacked(
+                        Input(
+                            name="net_contents_value",
+                            type="number",
+                            step="0.1",
+                            placeholder="e.g., 750",
+                            style="flex: 1;",
+                            required=True,
+                        ),
+                        Select(
+                            Option(
+                                "Select unit...", value="", disabled=True, selected=True
+                            ),
+                            Option("mL", value="mL"),
+                            Option("L", value="L"),
+                            Option("oz", value="oz"),
+                            Option("fl oz", value="fl oz"),
+                            name="net_contents_unit",
+                            style="flex: 0 0 100px;",
+                            required=True,
+                        ),
+                        style="gap: 0.5rem; display: flex;",
                     ),
                     style="gap: 0.5rem;",
                 ),
@@ -64,13 +84,18 @@ def get():
             ),
             style="max-width: 600px; text-align: left",
         ),
-        method="post",
-        action="/verify",
         enctype="multipart/form-data",
         cls="space-y-4",
+        hx_post="/verify",
+        hx_target="#results",
+        hx_swap="innerHTML",
     )
 
-    return Container(form, style="padding: 2rem;")
+    return Container(
+        form,
+        Div(id="results"),
+        style="padding: 2rem;",
+    )
 
 
 @rt("/verify")
@@ -78,12 +103,11 @@ async def post(
     brand_name: str,
     product_type: str,
     alcohol_content: float,
-    net_contents: str,
+    net_contents_value: float,
+    net_contents_unit: str,
     label_image: UploadFile,
 ):
-    error = validate_form(
-        brand_name, product_type, alcohol_content, net_contents, label_image
-    )
+    error = validate_form(alcohol_content, label_image, net_contents_unit)
     if error:
         return error
 
@@ -92,6 +116,11 @@ async def post(
 
         ocr = TesseractOCR()
         verifier = LabelVerifier(ocr)
+        if net_contents_value == int(net_contents_value):
+            net_contents = f"{int(net_contents_value)} {net_contents_unit}"
+        else:
+            net_contents = f"{net_contents_value} {net_contents_unit}"
+
         results = await verifier.verify(
             {
                 "brand_name": brand_name,

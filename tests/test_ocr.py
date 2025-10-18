@@ -133,9 +133,8 @@ async def test_ocr_can_extract_government_warning():
     assert "governmentwarning" in extracted_text.lower()
 
 
-@pytest.mark.asyncio
-async def save_test_label():
+def save_test_label(id=None):
     """Helper to save test label for inspection"""
     img = generate_test_label()
-    img.save("test_label.png")
-    print("Test label saved as test_label.png")
+    img.save(f"test_label_{id}.png")
+    print(f"Test label saved as test_label_{id}.png")
