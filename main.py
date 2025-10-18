@@ -91,8 +91,8 @@ async def post(
         content = await label_image.read()
 
         ocr = TesseractOCR()
-        image_text = ocr.extract_text(content)
-        results = LabelVerifier(ocr).verify(
+        verifier = LabelVerifier(ocr)
+        results = await verifier.verify(
             {
                 "brand_name": brand_name,
                 "product_type": product_type,
@@ -147,7 +147,7 @@ async def post(
                 Details(
                     Summary("View Extracted Text"),
                     Pre(
-                        image_text,
+                        results["extracted_text"],
                         style="background: #f5f5f5; padding: 1rem; overflow-x: auto; color: #000;",
                     ),
                 ),

@@ -1,3 +1,4 @@
+import pytest
 from ocr_service import OCRService
 from verifier import LabelVerifier
 
@@ -8,11 +9,12 @@ class MockOCR(OCRService):
     def __init__(self, text_to_return):
         self.text_to_return = text_to_return
 
-    def extract_text(self, image_bytes: bytes) -> str:
+    async def extract_text(self, image_bytes: bytes) -> str:
         return self.text_to_return
 
 
-def test_verify_all_fields_match():
+@pytest.mark.asyncio
+async def test_verify_all_fields_match():
     """Test successful verification when all fields match"""
     mock_text = """
     HAMMER WHISKEY
@@ -32,14 +34,15 @@ def test_verify_all_fields_match():
         "net_contents": "750 mL",
     }
 
-    results = verifier.verify(form_data, b"fake_image_bytes")
+    results = await verifier.verify(form_data, b"fake_image_bytes")
 
     assert results["success"] == True
     assert len(results["checks"]) == 5
     assert all(check["found"] for check in results["checks"])
 
 
-def test_verify_brand_name_mismatch():
+@pytest.mark.asyncio
+async def test_verify_brand_name_mismatch():
     """Test failure when brand name doesn't match"""
     mock_text = """
     DIFFERENT BRAND
@@ -59,14 +62,15 @@ def test_verify_brand_name_mismatch():
         "net_contents": "750 mL",
     }
 
-    results = verifier.verify(form_data, b"fake_image_bytes")
+    results = await verifier.verify(form_data, b"fake_image_bytes")
 
     assert results["success"] == False
     brand_check = next(c for c in results["checks"] if c["field"] == "Brand Name")
     assert brand_check["found"] == False
 
 
-def test_verify_missing_alcohol_content():
+@pytest.mark.asyncio
+async def test_verify_missing_alcohol_content():
     """Test failure when alcohol content is missing"""
     mock_text = """
     HAMMER WHISKEY
@@ -85,7 +89,7 @@ def test_verify_missing_alcohol_content():
         "net_contents": "750 mL",
     }
 
-    results = verifier.verify(form_data, b"fake_image_bytes")
+    results = await verifier.verify(form_data, b"fake_image_bytes")
 
     assert results["success"] == False
     alcohol_check = next(
@@ -94,7 +98,8 @@ def test_verify_missing_alcohol_content():
     assert alcohol_check["found"] == False
 
 
-def test_verify_missing_government_warning():
+@pytest.mark.asyncio
+async def test_verify_missing_government_warning():
     """Test failure when government warning is missing"""
     mock_text = """
     HAMMER WHISKEY
@@ -113,7 +118,7 @@ def test_verify_missing_government_warning():
         "net_contents": "750 mL",
     }
 
-    results = verifier.verify(form_data, b"fake_image_bytes")
+    results = await verifier.verify(form_data, b"fake_image_bytes")
 
     assert results["success"] == False
     warning_check = next(
@@ -122,7 +127,8 @@ def test_verify_missing_government_warning():
     assert warning_check["found"] == False
 
 
-def test_verify_handles_spacing_variations():
+@pytest.mark.asyncio
+async def test_verify_handles_spacing_variations():
     """Test that verifier handles OCR spacing issues"""
     # OCR often removes spaces
     mock_text = """
@@ -143,13 +149,14 @@ def test_verify_handles_spacing_variations():
         "net_contents": "750 mL",
     }
 
-    results = verifier.verify(form_data, b"fake_image_bytes")
+    results = await verifier.verify(form_data, b"fake_image_bytes")
 
     # Should still match because we normalize by removing spaces
     assert results["success"] == True
 
 
-def test_verify_whole_number_alcohol_content():
+@pytest.mark.asyncio
+async def test_verify_whole_number_alcohol_content():
     """Test that 45.0 is converted to 45 for matching"""
     mock_text = """
     HAMMER WHISKEY
@@ -169,7 +176,7 @@ def test_verify_whole_number_alcohol_content():
         "net_contents": "750 mL",
     }
 
-    results = verifier.verify(form_data, b"fake_image_bytes")
+    results = await verifier.verify(form_data, b"fake_image_bytes")
 
     alcohol_check = next(
         c for c in results["checks"] if c["field"] == "Alcohol Content"

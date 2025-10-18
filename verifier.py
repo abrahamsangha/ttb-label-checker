@@ -2,8 +2,8 @@ class LabelVerifier:
     def __init__(self, ocr_service):
         self.ocr_service = ocr_service
 
-    def verify(self, form_data: dict, image_bytes: bytes) -> dict:
-        extracted_text = self.ocr_service.extract_text(image_bytes)
+    async def verify(self, form_data: dict, image_bytes: bytes) -> dict:
+        extracted_text = await self.ocr_service.extract_text(image_bytes)
 
         # Normalize text for comparison (remove spaces for fuzzy matching)
         extracted_lower = extracted_text.lower().replace(" ", "")

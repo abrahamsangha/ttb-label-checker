@@ -1,6 +1,7 @@
+import io
+import pytest
 from PIL import Image, ImageDraw, ImageFont
 from ocr_service import TesseractOCR
-import io
 
 
 def generate_test_label():
@@ -67,67 +68,73 @@ def generate_test_label():
     return img
 
 
-def test_ocr_can_extract_brand_name():
+@pytest.mark.asyncio
+async def test_ocr_can_extract_brand_name():
     """Test that OCR extracts brand name"""
     img = generate_test_label()
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")
 
     ocr = TesseractOCR()
-    extracted_text = ocr.extract_text(img_bytes.getvalue())
+    extracted_text = await ocr.extract_text(img_bytes.getvalue())
 
     assert "hammer" in extracted_text.lower()
 
 
-def test_ocr_can_extract_product_type():
+@pytest.mark.asyncio
+async def test_ocr_can_extract_product_type():
     """Test that OCR extracts product type"""
     img = generate_test_label()
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")
 
     ocr = TesseractOCR()
-    extracted_text = ocr.extract_text(img_bytes.getvalue())
+    extracted_text = await ocr.extract_text(img_bytes.getvalue())
 
     assert "bourbon" in extracted_text.lower() or "whiskey" in extracted_text.lower()
 
 
-def test_ocr_can_extract_alcohol_content():
+@pytest.mark.asyncio
+async def test_ocr_can_extract_alcohol_content():
     """Test that OCR extracts alcohol content"""
     img = generate_test_label()
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")
 
     ocr = TesseractOCR()
-    extracted_text = ocr.extract_text(img_bytes.getvalue())
+    extracted_text = await ocr.extract_text(img_bytes.getvalue())
 
     assert "45" in extracted_text
 
 
-def test_ocr_can_extract_net_contents():
+@pytest.mark.asyncio
+async def test_ocr_can_extract_net_contents():
     """Test that OCR extracts net contents"""
     img = generate_test_label()
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")
 
     ocr = TesseractOCR()
-    extracted_text = ocr.extract_text(img_bytes.getvalue())
+    extracted_text = await ocr.extract_text(img_bytes.getvalue())
 
     assert "750" in extracted_text and "ml" in extracted_text.lower()
 
 
-def test_ocr_can_extract_government_warning():
+@pytest.mark.asyncio
+async def test_ocr_can_extract_government_warning():
     """Test that OCR extracts government warning"""
     img = generate_test_label()
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="PNG")
 
     ocr = TesseractOCR()
-    extracted_text = ocr.extract_text(img_bytes.getvalue())
+    extracted_text = await ocr.extract_text(img_bytes.getvalue())
 
     assert "governmentwarning" in extracted_text.lower()
 
 
-def save_test_label():
+@pytest.mark.asyncio
+async def save_test_label():
     """Helper to save test label for inspection"""
     img = generate_test_label()
     img.save("test_label.png")
