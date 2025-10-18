@@ -1,5 +1,6 @@
 from fasthtml.common import *
 from monsterui.all import *
+from ocr_service import TesseractOCR
 
 app, rt = fast_app(hdrs=(Theme.blue.headers(),), pico=False)
 
@@ -76,15 +77,22 @@ async def post(
     net_contents: str,
     label_image: UploadFile,
 ):
-    # TODO: Process image and verify
+    content = await label_image.read()
+
+    ocr = TesseractOCR()
+    image_text = ocr.extract_text(content)
+
     return Container(
         Card(
             H2("Verification Results"),
+            H3("Form Data:"),
             P(f"Brand: {brand_name}"),
             P(f"Type: {product_type}"),
             P(f"ABV: {alcohol_content}%"),
             P(f"Contents: {net_contents}"),
             P(f"Image: {label_image.filename}"),
+            H3("Image Text:"),
+            Pre(image_text),
         ),
         style="padding: 2rem;",
     )
