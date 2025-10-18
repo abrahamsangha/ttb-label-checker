@@ -1,6 +1,7 @@
 from fasthtml.common import *
 from monsterui.all import *
 from ocr_service import TesseractOCR
+from verifier import LabelVerifier
 
 app, rt = fast_app(hdrs=(Theme.blue.headers(),), pico=False)
 
@@ -81,18 +82,67 @@ async def post(
 
     ocr = TesseractOCR()
     image_text = ocr.extract_text(content)
+    results = LabelVerifier(ocr).verify(
+        {
+            "brand_name": brand_name,
+            "product_type": product_type,
+            "alcohol_content": alcohol_content,
+            "net_contents": net_contents,
+        },
+        content,
+    )
+    check_items = []
+    for check in results["checks"]:
+        icon = "✓" if check["found"] else "✗"
+        color = "green" if check["found"] else "red"
+        check_items.append(
+            DivHStacked(
+                Span(
+                    icon,
+                    style=f"color: {color}; font-weight: bold; font-size: 1.5rem; margin-right: 1rem;",
+                ),
+                DivVStacked(
+                    Strong(check["field"]),
+                    Span(
+                        f"Expected: {check['expected']}",
+                        style="font-size: 0.9rem; color: #666;",
+                    ),
+                    style="gap: 0.25rem;",
+                ),
+                style="align-items: center; gap: 1rem; padding: 0.5rem 0;",
+            )
+        )
+
+    # Overall status
+    if results["success"]:
+        status_card = Card(
+            H3("✓ Verification Passed", style="color: green;"),
+            P("All required information matches the label."),
+            style="background-color: #f0fff0; border: 2px solid green;",
+        )
+    else:
+        status_card = Card(
+            H3("✗ Verification Failed", style="color: red;"),
+            P("Some information does not match the label."),
+            style="background-color: #fff0f0; border: 2px solid red;",
+        )
 
     return Container(
-        Card(
-            H2("Verification Results"),
-            H3("Form Data:"),
-            P(f"Brand: {brand_name}"),
-            P(f"Type: {product_type}"),
-            P(f"ABV: {alcohol_content}%"),
-            P(f"Contents: {net_contents}"),
-            P(f"Image: {label_image.filename}"),
-            H3("Image Text:"),
-            Pre(image_text),
+        DivVStacked(
+            status_card,
+            Card(
+                H3("Verification Details"),
+                DivVStacked(*check_items, style="gap: 0.5rem;"),
+            ),
+            Details(
+                Summary("View Extracted Text"),
+                Pre(
+                    image_text,
+                    style="background: #f5f5f5; padding: 1rem; overflow-x: auto; color: #000;",
+                ),
+            ),
+            A("← Verify Another Label", href="/", style="margin-top: 1rem;"),
+            style="gap: 1.5rem;",
         ),
         style="padding: 2rem;",
     )
