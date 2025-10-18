@@ -1,3 +1,4 @@
+import os
 from fasthtml.common import *
 from monsterui.all import *
 from ocr_service import TesseractOCR
@@ -200,4 +201,4 @@ async def post(
         )
 
 
-serve()
+serve(port=int(os.getenv("PORT", 5001)))

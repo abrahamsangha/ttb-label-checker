@@ -1,20 +1,21 @@
-FROM python:3.11-slim
+FROM ghcr.io/astral-sh/uv:python3.11-trixie-slim
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
   tesseract-ocr \
   && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
 
-# Copy dependency files first
-COPY pyproject.toml uv.lock ./
-
-# Install uv and dependencies
-RUN pip install uv && uv sync --frozen
-
-# Copy the rest of the application
+# Copy project files
 COPY . .
 
+# Install Python dependencies
+RUN uv sync
+
+# Expose port
 EXPOSE 5001
 
-CMD ["python", "main.py"]
+# Run the app
+CMD ["uv", "run", "python", "main.py"]
