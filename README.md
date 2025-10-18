@@ -27,6 +27,32 @@ This application allows users to submit product information via a web form and u
 - [uv](https://docs.astral.sh/uv/) package manager
 - Tesseract OCR
 
+## Running with Docker (allows skipping installing Tesseract which can take awhile)
+
+### Build the Docker image:
+
+From the project root:
+
+```
+docker build -t ttb-label-checker .
+```
+
+Run the container:
+
+```
+docker run -p 5001:5001 ttb-label-checker
+```
+
+Then open your browser to http://localhost:5001
+
+### For development with live reload:
+
+```
+docker run -p 5001:5001 -v $(pwd):/app ttb-label-checker
+```
+
+## Local setup without Docker
+
 ### Install Tesseract
 
 **Mac:**
@@ -44,7 +70,7 @@ sudo apt-get install tesseract-ocr
 **Windows:**
 Download from: https://github.com/UB-Mannheim/tesseract/wiki
 
-## Installation
+### Python Packages Installation and Activation
 
 ```
 uv sync
