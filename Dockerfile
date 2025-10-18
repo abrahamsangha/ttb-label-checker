@@ -1,21 +1,20 @@
 FROM python:3.11-slim
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
   tesseract-ocr \
   && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy project files
+# Copy dependency files first
+COPY pyproject.toml uv.lock ./
+
+# Install uv and dependencies
+RUN pip install uv && uv sync --frozen
+
+# Copy the rest of the application
 COPY . .
 
-# Install Python dependencies
-RUN pip install uv && uv sync
-
-# Expose port
 EXPOSE 5001
 
-# Run the app
 CMD ["python", "main.py"]
