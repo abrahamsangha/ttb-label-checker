@@ -8,6 +8,77 @@ from utils.form_validator import validate_form
 app, rt = fast_app(hdrs=(Theme.blue.headers(),), pico=False)
 
 
+def build_error_ui(title, message, show_back_link=True):
+    """Build error card UI"""
+    card_content = [
+        H3(f"❌ {title}", style="color: red;"),
+        P(message),
+    ]
+    if show_back_link:
+        card_content.append(A("← Go Back", href="/"))
+
+    return Container(Card(*card_content), style="padding: 2rem;")
+
+
+def build_results_ui(results):
+    """Build verification results UI"""
+    check_items = []
+    for check in results["checks"]:
+        icon = "✓" if check["found"] else "✗"
+        color = "green" if check["found"] else "red"
+        check_items.append(
+            DivHStacked(
+                Span(
+                    icon,
+                    style=f"color: {color}; font-weight: bold; font-size: 1.5rem; margin-right: 1rem;",
+                ),
+                DivVStacked(
+                    Strong(check["field"]),
+                    Span(
+                        f"Expected: {check['expected']}",
+                        style="font-size: 0.9rem; color: #666;",
+                    ),
+                    style="gap: 0.25rem;",
+                ),
+                style="align-items: center; gap: 1rem; padding: 0.5rem 0;",
+            )
+        )
+
+    # Overall status card
+    if results["success"]:
+        status_card = Card(
+            H3("✓ Verification Passed", style="color: green;"),
+            P("All required information matches the label."),
+            style="background-color: #f0fff0; border: 2px solid green;",
+        )
+    else:
+        status_card = Card(
+            H3("✗ Verification Failed", style="color: red;"),
+            P("Some information does not match the label."),
+            style="background-color: #fff0f0; border: 2px solid red;",
+        )
+
+    return Container(
+        DivVStacked(
+            status_card,
+            Card(
+                H3("Verification Details"),
+                DivVStacked(*check_items, style="gap: 0.5rem;"),
+            ),
+            Details(
+                Summary("View Extracted Text"),
+                Pre(
+                    results["extracted_text"],
+                    style="background: #f5f5f5; padding: 1rem; overflow-x: auto; color: #000; font-size: 0.9rem;",
+                ),
+            ),
+            A("← Verify Another Label", href="/", style="margin-top: 1rem;"),
+            style="gap: 1.5rem; align-items: flex-start;",
+        ),
+        style="padding: 2rem;",
+    )
+
+
 @rt("/")
 def get():
     form = Form(
@@ -135,16 +206,15 @@ async def post(
         return error
 
     try:
-        content = await label_image.read()
-
-        ocr = TesseractOCR()
-        verifier = LabelVerifier(ocr)
         if net_contents_value == int(net_contents_value):
             net_contents = f"{int(net_contents_value)} {net_contents_unit}"
         else:
             net_contents = f"{net_contents_value} {net_contents_unit}"
 
-        results = await verifier.verify(
+        content = await label_image.read()
+        ocr = TesseractOCR()
+
+        results = await LabelVerifier(ocr).verify(
             {
                 "brand_name": brand_name,
                 "product_type": product_type,
@@ -153,73 +223,13 @@ async def post(
             },
             content,
         )
-        check_items = []
-        for check in results["checks"]:
-            icon = "✓" if check["found"] else "✗"
-            color = "green" if check["found"] else "red"
-            check_items.append(
-                DivHStacked(
-                    Span(
-                        icon,
-                        style=f"color: {color}; font-weight: bold; font-size: 1.5rem; margin-right: 1rem;",
-                    ),
-                    DivVStacked(
-                        Strong(check["field"]),
-                        Span(
-                            f"Expected: {check['expected']}",
-                            style="font-size: 0.9rem; color: #666;",
-                        ),
-                        style="gap: 0.25rem;",
-                    ),
-                    style="align-items: left; gap: 1rem; padding: 0.5rem 0;",
-                )
-            )
 
-        # Overall status
-        if results["success"]:
-            status_card = Card(
-                H3("✓ Verification Passed", style="color: green;"),
-                P("All required information matches the label."),
-                style="background-color: #f0fff0; border: 2px solid green;",
-            )
-        else:
-            status_card = Card(
-                H3("✗ Verification Failed", style="color: red;"),
-                P("Some information does not match the label."),
-                style="background-color: #fff0f0; border: 2px solid red;",
-            )
+        return build_results_ui(results)
 
-        return Container(
-            DivVStacked(
-                status_card,
-                Card(
-                    H3("Verification Details"),
-                    DivVStacked(
-                        *check_items, style="gap: 0.5rem;align-items: flex-start;"
-                    ),
-                ),
-                Details(
-                    Summary("View Extracted Text"),
-                    Pre(
-                        results["extracted_text"],
-                        style="background: #f5f5f5; padding: 1rem; overflow-x: auto; color: #000;",
-                    ),
-                ),
-                A("← Verify Another Label", href="/", style="margin-top: 1rem;"),
-                style="gap: 1.5rem; align-items: flex-start;",
-            ),
-            style="padding: 2rem;",
-        )
     except Exception as e:
-        return Container(
-            Card(
-                H3("❌ Processing Error", style="color: red;"),
-                P(f"An error occurred while processing the image: {str(e)}"),
-                P(
-                    "Please try again with a different image or check that the image is readable."
-                ),
-                A("← Go Back", href="/"),
-            )
+        return build_error_ui(
+            "Processing Error",
+            f"An error occurred while processing the image: {str(e)}. Please try again with a different image or check that the image is readable.",
         )
 
 
