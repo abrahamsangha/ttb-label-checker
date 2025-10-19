@@ -216,6 +216,10 @@ ttb-label-checker/
 
 ## Future Enhancements
 
+### Polished Design System and UI
+
+Due to time constraints, the UI is very minimal. The loading UX could be greatly enhanced. The mobile UX is functional but basic.
+
 ### LLM-Based OCR
 
 The codebase includes support for alternative OCR implementations. A `LlmOCR` class could be added to use vision-capable LLMs (GPT-4 Vision, Claude) for potentially more accurate text extraction.
