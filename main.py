@@ -91,8 +91,30 @@ def get():
         hx_target="#results",
         hx_swap="innerHTML show:#results:top smooth",
     )
-
     return Container(
+        Style(
+            """
+            .htmx-request ~ #results {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 200px;
+            }
+            .htmx-request ~ #results::after {
+                content: '';
+                width: 50px;
+                height: 50px;
+                border: 5px solid #f3f3f3;
+                border-top: 5px solid #3498db;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        """
+        ),
         form,
         Div(id="results"),
         style="padding: 2rem;",
