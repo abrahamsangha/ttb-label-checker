@@ -4,6 +4,8 @@ from monsterui.all import *
 from ocr_service import LlmOCR, TesseractOCR
 from verifier import LabelVerifier
 from utils.form_validator import validate_form
+from google.genai import types
+import json
 
 app, rt = fast_app(hdrs=(Theme.blue.headers(),), pico=False)
 
@@ -213,18 +215,57 @@ async def post(
 
         content = await label_image.read()
         ocr = LlmOCR()
+        #
+        # results = await LabelVerifier(ocr).verify(
+        #     {
+        #         "brand_name": brand_name,
+        #         "product_type": product_type,
+        #         "alcohol_content": alcohol_content,
+        #         "net_contents": net_contents,
+        #     },
+        #     content,
+        # )
+        prompt = f"""
+                    You are a TTB Label Verification AI. Extract all text from this alcohol beverage label image and verify it matches the for
 
-        results = await LabelVerifier(ocr).verify(
-            {
-                "brand_name": brand_name,
-                "product_type": product_type,
-                "alcohol_content": alcohol_content,
-                "net_contents": net_contents,
-            },
-            content,
+            **CRITICAL:** Return ONLY raw JSON. Do NOT wrap in markdown code fences. Do NOT include ```json or ``` markers.m data.
+
+            **OUTPUT FORMAT:**
+            Return ONLY a JSON object (no markdown, no extra text) with this exact structure:
+            {{
+            "success": boolean,
+            "checks": [
+                {{"field": "Brand Name", "expected": "{brand_name}", "found": boolean}},
+                {{"field": "Product Type", "expected": "{product_type}", "found": boolean}},
+                {{"field": "Alcohol Content", "expected": "{alcohol_content}%", "found": boolean}},
+                {{"field": "Net Contents", "expected": "{net_contents}", "found": boolean}},
+                {{"field": "Government Warning", "expected": "Present", "found": boolean}}
+            ],
+            "extracted_text": "all text visible on the label"
+            }}
+
+            **MATCHING RULES:**
+            - Case-insensitive matching
+            - Allow minor spacing/formatting differences
+            - For alcohol content, match the number (e.g., "40% alc/vol" matches "40")
+            - For net contents, match number and unit together
+            - Government Warning: check if "GOVERNMENT WARNING" text is present
+            - Set "success" to true only if ALL checks have "found": true
+        """
+        results = ocr.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                prompt,
+                types.Part.from_bytes(
+                    data=content,
+                    mime_type="image/jpeg",
+                ),
+            ],
         )
+        print("LLM: ", results.text)
 
-        return build_results_ui(results)
+        results_dict = json.loads(results.text) if results.text else {}
+        return build_results_ui(results_dict)
 
     except Exception as e:
         return build_error_ui(
