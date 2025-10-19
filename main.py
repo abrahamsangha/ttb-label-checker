@@ -1,7 +1,7 @@
 import os
 from fasthtml.common import *
 from monsterui.all import *
-from ocr_service import TesseractOCR
+from ocr_service import LlmOCR, TesseractOCR
 from verifier import LabelVerifier
 from utils.form_validator import validate_form
 
@@ -212,7 +212,7 @@ async def post(
             net_contents = f"{net_contents_value} {net_contents_unit}"
 
         content = await label_image.read()
-        ocr = TesseractOCR()
+        ocr = LlmOCR()
 
         results = await LabelVerifier(ocr).verify(
             {
